@@ -4,6 +4,7 @@
 #endif
 #include <guichan.hpp>
 #include <iostream>
+#include <sstream>
 #include <SDL/SDL_ttf.h>
 #include <guichan/sdl.hpp>
 #include "guichan/contrib/sdl/sdltruetypefont.hpp"
@@ -12,7 +13,7 @@
 
 namespace widgets
 {
-  extern std::string menuFileDisk[4];
+  extern std::string menuFileDisk[];
   extern std::string menu_extfs;
   extern std::string menu_nocdrom;
   void run_menuLoad_guichan(char *curr_path, int aLoadType);
@@ -44,7 +45,10 @@ namespace widgets
 
         std::string getElementAt(int i)
         {
-            return menuFileDisk[i];
+	    if (menuFileDisk[i]!="")
+	      return menuFileDisk[i];
+	    else
+	      return "                                  ";
         }
     };
     VolumeListModel volumeListModel;
@@ -71,27 +75,25 @@ namespace widgets
 	    if (actionEvent.getSource() == button_remove)
 	    {
 	      	activateAfterClose = button_remove;
-			int selectedItem = 0;
-#if VIDEO_PLUS_CRASHES
-			selectedItem=volumeListBox->getSelected();
-#endif
-			menuFileDisk[selectedItem]="";
-			for (int i=3; i>0; i--)
+		int selectedItem;
+		selectedItem=volumeListBox->getSelected();
+		menuFileDisk[selectedItem]="";
+		for (int i=3; i>0; i--)
+		{
+			if ((menuFileDisk[i-1]=="") && (menuFileDisk[i]!=""))
 			{
-				if ((menuFileDisk[i-1]=="") && (menuFileDisk[i]!=""))
-				{
-					menuFileDisk[i-1]=menuFileDisk[i];
-					menuFileDisk[i]="";
-				}
+				menuFileDisk[i-1]=menuFileDisk[i];
+				menuFileDisk[i]="";
 			}
-			for (int i=0; i<3; i++)
+		}
+		for (int i=0; i<3; i++)
+		{
+			if ((menuFileDisk[i]=="") && (menuFileDisk[i+1]!=""))
 			{
-				if ((menuFileDisk[i]=="") && (menuFileDisk[i+1]!=""))
-				{
-					menuFileDisk[i]=menuFileDisk[i+1];
-					menuFileDisk[i+1]="";
-				}
+				menuFileDisk[i]=menuFileDisk[i+1];
+				menuFileDisk[i+1]="";
 			}
+		}
 			
   	    }
       }
@@ -128,7 +130,6 @@ namespace widgets
   
   void menuTabVolumes_Init()
   {
-#if VIDEO_PLUS_CRASHES
     volumeListBox = new gcn::ListBox(&volumeListModel);
     volumeListBox->setId("volumeList");
     volumeListBox->setSize(650,150);
@@ -140,60 +141,57 @@ namespace widgets
     volumeScrollArea->setSize(580,100);
     volumeScrollArea->setScrollbarWidth(20);
     volumeScrollArea->setBaseColor(baseCol);
-#endif
-  	button_add = new gcn::Button("Add");
-  	button_add->setSize(80,30);
-  	button_add->setPosition(10,125);
+    button_add = new gcn::Button("Add");
+    button_add->setSize(80,30);
+    button_add->setPosition(10,125);
     button_add->setBaseColor(baseCol);
     button_add->setId("Add");
     addButtonActionListener = new AddButtonActionListener();
-  	button_add->addActionListener(addButtonActionListener);
-  	button_create = new gcn::Button("Create");
-  	button_create->setSize(80,30);
-  	button_create->setPosition(255,125);
+    button_add->addActionListener(addButtonActionListener);
+    button_create = new gcn::Button("Create");
+    button_create->setSize(80,30);
+    button_create->setPosition(255,125);
     button_create->setBaseColor(baseCol);
     button_create->setId("Create");
-  	button_remove = new gcn::Button("Remove");
-  	button_remove->setSize(80,30);
-  	button_remove->setPosition(500,125);
+    button_remove = new gcn::Button("Remove");
+    button_remove->setSize(80,30);
+    button_remove->setPosition(500,125);
     button_remove->setBaseColor(baseCol);
     button_remove->setId("Remove");
     removeButtonActionListener = new RemoveButtonActionListener();
-  	button_remove->addActionListener(removeButtonActionListener);
+    button_remove->addActionListener(removeButtonActionListener);
 
-  	button_hostfs = new gcn::Button("HostFS Dir");
-  	button_hostfs->setSize(85,30);
-  	button_hostfs->setPosition(10,185);
+    button_hostfs = new gcn::Button("HostFS Dir");
+    button_hostfs->setSize(85,30);
+    button_hostfs->setPosition(10,185);
     button_hostfs->setBaseColor(baseCol);
     button_hostfs->setId("HostFS");
     hostfsButtonActionListener = new HostfsButtonActionListener();
-  	button_hostfs->addActionListener(hostfsButtonActionListener);	
-	
-  	textField_hostfs = new gcn::TextField("                                                            ");
-  	textField_hostfs->setSize(450,22);
-  	textField_hostfs->setPosition(110,190);
-  	textField_hostfs->setEnabled(false);
+    button_hostfs->addActionListener(hostfsButtonActionListener);	
+
+    textField_hostfs = new gcn::TextField("                                                            ");
+    textField_hostfs->setSize(450,22);
+    textField_hostfs->setPosition(110,190);
+    textField_hostfs->setEnabled(false);
     textField_hostfs->setBaseColor(baseCol);
-	
-	checkBox_nocdrom = new gcn::CheckBox("Disable CD-ROM driver");
-	checkBox_nocdrom->setPosition(10,240);
-	checkBox_nocdrom->setId("nocdrom");
-	checkBox_nocdrom->setBaseColor(baseCol);
-	nocdromActionListener = new NocdromActionListener();
-	checkBox_nocdrom->addActionListener(nocdromActionListener);
-	
+
+    checkBox_nocdrom = new gcn::CheckBox("Disable CD-ROM driver");
+    checkBox_nocdrom->setPosition(10,240);
+    checkBox_nocdrom->setId("nocdrom");
+    checkBox_nocdrom->setBaseColor(baseCol);
+    nocdromActionListener = new NocdromActionListener();
+    checkBox_nocdrom->addActionListener(nocdromActionListener);
+
     tab_volumes = new gcn::Container();
-	tab_volumes->add(background2);
-#if VIDEO_PLUS_CRASHES
-	tab_volumes->add(volumeScrollArea);
-#endif
-	tab_volumes->add(button_add);
-	tab_volumes->add(button_remove);
-	tab_volumes->add(button_create);
-	tab_volumes->add(button_hostfs);
-	tab_volumes->add(textField_hostfs);
-	tab_volumes->add(checkBox_nocdrom);
-  	tab_volumes->setSize(600,340);
+    tab_volumes->add(background2);
+    tab_volumes->add(volumeScrollArea);
+    tab_volumes->add(button_add);
+    tab_volumes->add(button_remove);
+    tab_volumes->add(button_create);
+    tab_volumes->add(button_hostfs);
+    tab_volumes->add(textField_hostfs);
+    tab_volumes->add(checkBox_nocdrom);
+    tab_volumes->setSize(600,340);
     tab_volumes->setBaseColor(baseCol);
   }
   
@@ -201,10 +199,8 @@ namespace widgets
   void menuTabVolumes_Exit()
   {
     delete tab_volumes;
-#if VIDEO_PLUS_CRASHES
     delete volumeListBox;
     delete volumeScrollArea;
-#endif
     delete button_add;
     delete button_create;
     delete button_remove;
@@ -220,11 +216,11 @@ namespace widgets
 
   void show_settings_TabVolumes()
   {
-		textField_hostfs->setText(menu_extfs);
+	textField_hostfs->setText(menu_extfs);
 	if (menu_nocdrom=="true")
 	    checkBox_nocdrom->setSelected(true);
 	else
 	    checkBox_nocdrom->setSelected(false);
   }
 
-}
+} 
