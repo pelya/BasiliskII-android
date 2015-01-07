@@ -4,10 +4,10 @@
 #endif
 #include <guichan.hpp>
 #include <iostream>
+#include <sstream>
 #include <SDL/SDL_ttf.h>
 #include <guichan/sdl.hpp>
 #include "guichan/contrib/sdl/sdltruetypefont.hpp"
-
 
 namespace widgets
 {
@@ -35,19 +35,19 @@ namespace widgets
   gcn::DropDown* dropDown_frameskip;
   gcn::CheckBox* checkBox_nosound;
 
-const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/768"};
+const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/600", "win/1024/768"};
   
   class ScreenModeModel : public gcn::ListModel
   {
     public:
       int getNumberOfElements()
       {
-        return 3;
+        return 4;
       }
 
       std::string getElementAt(int i)
       {
-		const char *ScreenMode_list[] = { "640x480", "800x600", "1024x768"};
+		const char *ScreenMode_list[] = { "640x480", "800x600", "1024x600", "1024x768"};
         return std::string(ScreenMode_list[i]);
       }
   };
@@ -63,9 +63,12 @@ const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/768"}
 
       std::string getElementAt(int i)
       {
-        char buf[32];
-        sprintf(buf, "%d", i);
-        return buf;
+	  // Convert (i) from integer to string
+		std::string str;
+		std::ostringstream temp;
+		temp<<i;
+		str=temp.str();
+        return str;
       }
   };
   FrameskipModel frameskipList;
@@ -91,8 +94,13 @@ const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/768"}
       {
         if (actionEvent.getSource() == dropDown_frameskip)
 		{
-			int selected = dropDown_frameskip->getSelected();
-			menu_frameskip = frameskipList.getElementAt(selected);
+			int selected=dropDown_screenmode->getSelected();
+			// Convert (selected) from integer to string
+			std::string str;
+			std::ostringstream temp;
+			temp<<selected;
+			str=temp.str();
+			menu_frameskip=str;
 		}
       }
   };
@@ -189,8 +197,10 @@ const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/768"}
 		dropDown_screenmode->setSelected(0);
 	else if (menu_screen=="win/800/600")
 		dropDown_screenmode->setSelected(1);
-	else if (menu_screen=="win/1024/768")
+	else if (menu_screen=="win/1024/600")
 		dropDown_screenmode->setSelected(2);
+	else if (menu_screen=="win/1024/768")
+		dropDown_screenmode->setSelected(3);
 	dropDown_frameskip->setSelected(std::atoi(menu_frameskip.c_str()));
 	if (menu_nosound=="true")
 	    checkBox_nosound->setSelected(true);
