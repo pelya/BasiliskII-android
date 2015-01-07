@@ -4,6 +4,7 @@
 #endif
 #include <guichan.hpp>
 #include <iostream>
+#include <sstream>
 #include <SDL/SDL_ttf.h>
 #include <guichan/sdl.hpp>
 #include "guichan/contrib/sdl/sdltruetypefont.hpp"
@@ -14,11 +15,10 @@
 #include <SDL_screenkeyboard.h>
 #endif
 
-//#define VIDEO_PLUS_CRASHES 1
-
 SDL_Surface* GuiScreen;
 int emulating;
 bool running = false;
+SDL_Joystick *joy0;
 
 #define GUI_WIDTH  640
 #define GUI_HEIGHT 480
@@ -46,8 +46,8 @@ namespace sdl
 
 #ifdef ANDROIDSDL
 	  // Enable Android multitouch
-	  SDL_InitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_VIDEO);
-	  SDL_JoystickOpen(0);
+	  SDL_InitSubSystem(SDL_INIT_JOYSTICK);
+	  joy0 = SDL_JoystickOpen(0);
 #endif
 #ifdef PANDORA
     SDL_ShowCursor(SDL_ENABLE);
@@ -202,6 +202,7 @@ namespace widgets
   extern void readConfig();
   extern void writeConfig();
   extern void run_menuLoad_guichan(char *curr_path, int aLoadType);
+  extern gcn::Window *window_load; 
   
   void show_settings_TabVolumes(void);
   void show_settings_TabMisc(void);
@@ -240,15 +241,8 @@ namespace widgets
   extern gcn::Container *tab_misc;
   extern gcn::Container *tab_displaysound; 
     
-  const int numTabs =
-#if VIDEO_PLUS_CRASHES
-      3;
-#else
-      2;
-#endif
+  const int numTabs = 3;
   gcn::Tab *allTabs[numTabs];
-  
-//extern "C" void uae_quit (void);
   
   class QuitButtonActionListener : public gcn::ActionListener
   {
@@ -256,7 +250,7 @@ namespace widgets
       void action(const gcn::ActionEvent& actionEvent)
       {
   			running = false;
-//			uae_quit ();
+			exit(0);
       }
   };
   QuitButtonActionListener* quitButtonActionListener;
@@ -294,15 +288,15 @@ namespace widgets
     baseColLabel.b = baseCol.b;
     baseColLabel.a = 192;
     
-    TTF_Init();
-    font = new gcn::contrib::SDLTrueTypeFont("data/FreeSans.ttf", 16);	
-    gcn::Widget::setGlobalFont(font);
-
     top = new gcn::Container();
     top->setDimension(gcn::Rectangle(0, 0, 640, 480));
     top->setBaseColor(baseCol);
     globals::gui->setTop(top);
 
+    TTF_Init();
+    font = new gcn::contrib::SDLTrueTypeFont("data/FreeSans.ttf", 16);	
+    gcn::Widget::setGlobalFont(font);
+	
     background_image = gcn::Image::load("data/background.jpg");
     background = new gcn::Icon(background_image);
     background2_image = gcn::Image::load("data/background2.jpg");
@@ -319,10 +313,10 @@ namespace widgets
     quitButtonActionListener = new QuitButtonActionListener();
     button_quit->addActionListener(quitButtonActionListener);
     
-  	button_reset = new gcn::Button("Reset");
+  	button_reset = new gcn::Button("Start");
   	button_reset->setSize(90,50);
     button_reset->setBaseColor(baseCol);
-  	button_reset->setId("Reset");
+  	button_reset->setId("Start");
     resetButtonActionListener = new ResetButtonActionListener();
     button_reset->addActionListener(resetButtonActionListener);
 
@@ -339,9 +333,7 @@ namespace widgets
 
     menuTabVolumes_Init();
 	menuTabMisc_Init();
-#if VIDEO_PLUS_CRASHES
 	menuTabDisplaySound_Init(); 
-#endif
 
   	//--------------------------------------------------
     // Tab-Dialog
@@ -361,10 +353,8 @@ namespace widgets
 	 tabbedArea->addTab(allTabs[0], tab_volumes);
 	 allTabs[1]->setCaption(" Memory/Misc ");
 	 tabbedArea->addTab(allTabs[1], tab_misc);
-#if VIDEO_PLUS_CRASHES
 	 allTabs[2]->setCaption(" Graphics/Sound ");
 	 tabbedArea->addTab(allTabs[2], tab_displaysound);
-#endif
 	
 	loadMenu_Init(); 
 	
@@ -374,8 +364,9 @@ namespace widgets
     top->add(background, 0, 0);
     top->add(tabbedArea, 20, 20);
     top->add(button_reset, 210, 410);
-    top->add(button_resume, 320, 410);
-    top->add(button_quit, 430, 410);
+//    top->add(button_resume, 320, 410);
+    top->add(button_quit, 340, 410);
+    top->add(window_load, 120, 90); 
 	
   	//--------------------------------------------------
   	// Display values on controls
@@ -387,9 +378,7 @@ namespace widgets
   {
 	menuTabVolumes_Exit();
 	menuTabMisc_Exit();
-#if VIDEO_PLUS_CRASHES
 	menuTabDisplaySound_Exit();
-#endif
 	loadMenu_Exit(); 
 	
     delete tabbedArea;
@@ -422,15 +411,16 @@ namespace widgets
   {
     show_settings_TabVolumes();
 	show_settings_TabMisc();
-#if VIDEO_PLUS_CRASHES
 	show_settings_TabDisplaySound();
-#endif
   }
   
 } 
 
  int gui_open (void)
  {
+#ifdef ANDROID	  
+  SDL_ANDROID_SetScreenKeyboardShown(0);
+#endif
    running = true;
    
    try
@@ -441,28 +431,29 @@ namespace widgets
     sdl::run();
     widgets::halt();
     sdl::halt();
+    SDL_JoystickClose (joy0);
+#ifdef ANDROID	  
+  SDL_ANDROID_SetScreenKeyboardShown(1);
+#endif
    }
 
    // Catch all Guichan exceptions.
    catch (gcn::Exception e)
    {
-       __android_log_print(ANDROID_LOG_INFO, "GUICHAN", "gcn::Exception: %s", e.getMessage().c_str());
        std::cout << e.getMessage() << std::endl;
-       //SDL_Quit();
+       SDL_Quit();
    }
    // Catch all Std exceptions.
    catch (std::exception e)
    {
-       __android_log_print(ANDROID_LOG_INFO, "GUICHAN", "std::exception: %s", e.what());
        std::cout << "Std exception: " << e.what() << std::endl;
-       //SDL_Quit();
+       SDL_Quit();
    }
    // Catch all unknown exceptions.
    catch (...)
    {
-       __android_log_print(ANDROID_LOG_INFO, "GUICHAN", "Unknown exception");
        std::cout << "Unknown exception" << std::endl;
-       //SDL_Quit();
+       SDL_Quit();
    }
 
      return -1;
