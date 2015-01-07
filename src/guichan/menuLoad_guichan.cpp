@@ -4,15 +4,13 @@
 #endif
 #include <guichan.hpp>
 #include <iostream>
+#include <sstream>
 #include <SDL/SDL_ttf.h>
 #include <guichan/sdl.hpp>
 #include "guichan/contrib/sdl/sdltruetypefont.hpp"
-
 #include "rw_config.h"
 #include <sys/types.h>
 #include <dirent.h>
-
-//#define VIDEO_PLUS_CRASHES 1
 
 #if defined(WIN32)
 #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
@@ -23,8 +21,11 @@
 #endif
 
 int menuLoad_extfilter=1;
+bool confirmselection = false;
 
 #define extterms files[q].size()>=4 && files[q].substr(files[q].size()-4)
+#define fileterms extterms!=".img" && extterms!=".IMG" && extterms!=".Img" && extterms!=".iso" && extterms!=".ISO" && extterms!=".Iso" && extterms!=".dsk" && extterms!=".DSK" && extterms!=".Dsk"
+#define romterms extterms!=".rom" && extterms!=".ROM" && extterms!=".Rom"
 
 #define _XOPEN_SOURCE 500
 #if defined(AROS)
@@ -169,9 +170,8 @@ namespace widgets
           return "---";
         if(i < dirs.size())
           return dirs[i];
-        if (menu_load_type != MENU_ADD_DIR)
+	      if (menu_load_type != MENU_ADD_DIR)
           return files[i - dirs.size()];
-        return "---";
       }
       
       void changeDir(const char * path)
@@ -200,9 +200,21 @@ namespace widgets
         if(dirs.size() == 0)
           dirs.push_back("..");
 
-	      std::sort(dirs.begin(), dirs.end());
-	      if (menu_load_type != MENU_ADD_DIR)
+	std::sort(dirs.begin(), dirs.end());
+	if (menu_load_type != MENU_ADD_DIR)
           std::sort(files.begin(), files.end());
+/* file extension filter is disabled
+#ifdef ANDROID
+	    if (menuLoad_extfilter==1)
+#endif
+	    for (int q=0; q<files.size(); q++)
+	      {
+	        if (((menu_load_type == MENU_ADD_VOLUME) && fileterms) || ((menu_load_type == MENU_SELECT_ROM) && romterms))
+	        {
+		        files.erase(files.begin()+q);
+		        q--;
+	        }
+	      }*/
       }
       
       bool isDir(int i)
@@ -229,6 +241,7 @@ namespace widgets
 	      strcat(filename, currentDir);
 	      strcat(filename, "/");
 	      strcat(filename, dirList.getElementAt(selected_item).c_str());
+	      confirmselection=true;
 	      checkfilename(filename);
       }
   };
@@ -253,6 +266,7 @@ namespace widgets
 	      {
 		      menu_extfs=filename;
 	      }
+	      confirmselection=true;
 	      unraise_loadMenu_guichan();
       }
   };
@@ -295,6 +309,7 @@ namespace widgets
     public:
       void action(const gcn::ActionEvent& actionEvent)
       {
+	confirmselection=false;
 #if defined(WIN32) || defined(ANDROIDSDL) || defined(AROS) || defined(RASPBERRY)
 	if (menu_load_type != MENU_ADD_DIR)
 	{
@@ -409,7 +424,6 @@ namespace widgets
 	  cancelButtonActionListener = new CancelButtonActionListener();
   	button_cancel->addActionListener(cancelButtonActionListener);
 
-#if VIDEO_PLUS_CRASHES
 	  listBox = new gcn::ListBox(&dirList);
 	  listBox->setSize(650,150);
     listBox->setBaseColor(baseCol);
@@ -425,7 +439,6 @@ namespace widgets
     listBoxKeyListener = new ListBoxKeyListener();
     listBox->removeKeyListener(listBox);
     listBox->addKeyListener(listBoxKeyListener);
-#endif
 #ifdef ANDROIDSDL
 	  checkBox_extfilter = new gcn::CheckBox("ext. filter");
 	  checkBox_extfilter->setPosition(10,250);
@@ -437,9 +450,7 @@ namespace widgets
 	  window_load->add(button_select);
 	  window_load->add(button_open);
   	window_load->add(button_cancel);
-#if VIDEO_PLUS_CRASHES
   	window_load->add(listBoxScrollArea);
-#endif
 #ifdef ANDROIDSDL
 	window_load->add(checkBox_extfilter);
 #endif
@@ -449,10 +460,8 @@ namespace widgets
 
   void loadMenu_Exit()
   {
-#if VIDEO_PLUS_CRASHES
     delete listBox;
     delete listBoxScrollArea;
-#endif
 
   	delete button_ok;
   	delete button_select;
@@ -466,10 +475,8 @@ namespace widgets
   	delete selectButtonActionListener;
   	delete openButtonActionListener;
   	delete cancelButtonActionListener;
-#if VIDEO_PLUS_CRASHES
   	delete listBoxActionListener;
   	delete listBoxKeyListener;
-#endif
 #ifdef ANDROIDSDL
 	delete extfilterActionListener;
 #endif
@@ -552,7 +559,6 @@ namespace widgets
     
     if(lastSelectedIndex >= 0 && lastSelectedIndex < dirList.getNumberOfElements())
       listBox->setSelected(lastSelectedIndex);
-    return 0;
   }
   
 
@@ -581,7 +587,7 @@ namespace widgets
   	}
   	else 
   	{
-  	  if (menu_load_type == MENU_ADD_VOLUME)
+  	  if ((menu_load_type == MENU_ADD_VOLUME) && confirmselection)
   	  {
 		  for (int i=0; i<4; i++)
 		  {
@@ -592,12 +598,13 @@ namespace widgets
 			}
 		  }
   	  }
-	  else if (menu_load_type == MENU_SELECT_ROM)
+	  else if ((menu_load_type == MENU_SELECT_ROM) && confirmselection)
   	  {
 			menu_rom=currentfilename;
   	  }
 
-  	  unraise_loadMenu_guichan();
+  	  if (confirmselection)
+	    unraise_loadMenu_guichan();
   	}
   }
 }
