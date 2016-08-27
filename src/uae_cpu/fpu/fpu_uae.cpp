@@ -89,7 +89,7 @@
 #include "sysdeps.h"
 #include <math.h>
 #include <stdio.h>
-#include "memory-uae.h"
+#include "memory-mac.h"
 #include "readcpu.h"
 #include "newcpu.h"
 #include "main.h"

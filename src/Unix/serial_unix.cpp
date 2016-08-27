@@ -28,7 +28,11 @@
 #include <termios.h>
 #include <errno.h>
 #ifdef __linux__
-//#include <linux/lp.h>
+
+#ifndef ANDROID
+#include <linux/lp.h>
+#endif
+
 #include <linux/major.h>
 #include <linux/kdev_t.h>
 #endif
@@ -53,7 +57,6 @@ extern "C" {
 #ifdef ANDROID
 #define HAVE_CFMAKERAW 1
 #endif
-
 
 // IRIX missing or unsupported defines
 #ifdef sgi

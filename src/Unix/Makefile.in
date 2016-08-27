@@ -23,13 +23,12 @@ CFLAGS = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
 CPUINCLUDES_FLAGS=@CPUINCLUDES@
 CPUINCLUDES_FLAGS:=$(CPUINCLUDES_FLAGS:-I%=-I@top_srcdir@/%)
-CPPFLAGS = @CPPFLAGS@ -I@top_srcdir@/../include -I@top_srcdir@/. -I. $(CPUINCLUDES_FLAGS) -I@top_srcdir@/../slirp
+CPPFLAGS = @CPPFLAGS@ -I@top_srcdir@/../include -I@top_srcdir@/. -I. -I@top_srcdir@/../CrossPlatform $(CPUINCLUDES_FLAGS) -I@top_srcdir@/../slirp
 DEFS = @DEFS@ @DEFINES@ -DGUICHAN_GUI -DANDROIDSDL -D_REENTRANT -DDATADIR=\"$(datadir)/$(APP)\"
 LDFLAGS = @LDFLAGS@
-LIBS = @LIBS@ -lgnustl_static
+LIBS = @LIBS@
 SYSSRCS = @SYSSRCS@
 CPUSRCS = @CPUSRCS@
-GEN_SRCS = cpudefs.cpp ../uae_cpu/readcpu.cpp
 BLESS = @BLESS@
 EXEEXT = @EXEEXT@
 INSTALL = @INSTALL@
@@ -48,17 +47,18 @@ GUI_SRCS = ../prefs.cpp prefs_unix.cpp prefs_editor_gtk.cpp ../prefs_items.cpp \
 GUICHAN_SRCS = ../guichan/guichan-gui.cpp ../guichan/menuLoad_guichan.cpp ../guichan/menuTabDisplaySound.cpp  \
 	../guichan/menuTabMisc.cpp ../guichan/menuTabVolumes.cpp ../guichan/rw_config.cpp
 
+XPLAT_SRCS = ../CrossPlatform/vm_alloc.cpp ../CrossPlatform/sigsegv.cpp ../CrossPlatform/video_blit.cpp
+
 ## Files
 SRCS = ../main.cpp ../prefs.cpp ../prefs_items.cpp \
     sys_unix.cpp ../rom_patches.cpp ../slot_rom.cpp ../rsrc_patches.cpp \
     ../emul_op.cpp ../macos_util.cpp ../xpram.cpp xpram_unix.cpp ../timer.cpp \
     timer_unix.cpp ../adb.cpp ../serial.cpp ../ether.cpp \
     ../sony.cpp ../disk.cpp ../cdrom.cpp ../scsi.cpp ../video.cpp \
-    video_blit.cpp \
-    vm_alloc.cpp sigsegv.cpp ../audio.cpp ../extfs.cpp disk_sparsebundle.cpp \
+    ../audio.cpp ../extfs.cpp disk_sparsebundle.cpp \
 	tinyxml2.cpp \
     ../user_strings.cpp user_strings_unix.cpp sshpty.c strlcpy.c rpc_unix.cpp \
-    $(SYSSRCS) $(CPUSRCS) $(SLIRP_SRCS) $(GUICHAN_SRCS)
+    $(XPLAT_SRCS) $(SYSSRCS) $(CPUSRCS) $(SLIRP_SRCS) $(GUICHAN_SRCS)
 APP_FLAVOR ?=
 ifneq ($(APP_FLAVOR),)
 	CURR_APP_FLAVOR := -$(APP_FLAVOR)
@@ -104,13 +104,6 @@ endef
 GUI_OBJS = $(GUI_SRCS_LIST_TO_OBJS)
 GUI_SRCS := $(GUI_SRCS:%=@top_srcdir@/%)
 
-define GEN_SRCS_LIST_TO_OBJS
-	$(addprefix $(OBJ_DIR)/, $(addsuffix .geno, $(foreach file, $(GEN_SRCS), \
-	$(basename $(notdir $(file))))))
-endef
-GEN_OBJS = $(GEN_SRCS_LIST_TO_OBJS)
-GEN_SRCS := $(GEN_SRCS:%=./%)
-
 SRC_PATHS += $(sort $(foreach file, $(SRCS), $(dir $(file))))
 VPATH :=
 VPATH += $(addprefix :, $(subst  ,:, $(filter-out $($(subst, :, ,$(VPATH))), $(SRC_PATHS))))
@@ -124,9 +117,6 @@ $(APP)$(EXEEXT): $(OBJ_DIR) $(OBJS)
 
 $(GUI_APP)$(EXEEXT): $(OBJ_DIR) $(GUI_OBJS)
 	$(CXX) -o $@ $(LDFLAGS) $(GUI_OBJS) $(GUI_LIBS)
-
-$(GEN_APP)$(EXEEXT): $(OBJ_DIR) $(GEN_OBJS)
-	$(HOSTCXX) -o $@ $(LDFLAGS) $(GEN_OBJS)
 
 $(APP)_app: $(APP) $(OSX_DOCS) ../../README ../MacOSX/Info.plist ../MacOSX/$(APP).icns
 	rm -rf $(APP_APP)/Contents

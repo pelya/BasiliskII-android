@@ -27,7 +27,7 @@
 #include "rom_patches.h"
 #include "timer.h"
 #include "m68k.h"
-#include "memory-uae.h"
+#include "memory-mac.h"
 #include "readcpu.h"
 #include "newcpu.h"
 #include "compiler/compemu.h"

@@ -54,7 +54,7 @@ using std::list;
 #define HAVE_SIGINFO_T 1
 //#define HAVE_SIGCONTEXT_SUBTERFUGE 1
 //#define HAVE_MACH_EXCEPTIONS 1
-#define HAVE_SIGSEGV_SKIP_INSTRUCTION 1
+//#define HAVE_SIGSEGV_SKIP_INSTRUCTION 1
 #define HAVE_SIGSEGV_RECOVERY 1
 #endif
 
@@ -79,9 +79,10 @@ static sigsegv_fault_handler_t sigsegv_fault_handler = 0;
 // Function called to dump state if we can't handle the fault
 static sigsegv_state_dumper_t sigsegv_state_dumper = 0;
 
+#if defined(HAVE_SIGINFO_T) || defined(HAVE_SIGCONTEXT_SUBTERFUGE)
 // Actual SIGSEGV handler installer
 static bool sigsegv_do_install_handler(int sig);
-
+#endif
 
 /*
  *  Instruction decoding aids
@@ -754,7 +755,7 @@ handleExceptions(void *priv)
 
 #ifdef HAVE_SIGSEGV_SKIP_INSTRUCTION
 // Decode and skip X86 instruction
-#if (defined(i386) || defined(__i386__)) || (defined(__x86_64__) || defined(_M_X64))
+#if (defined(i386) || defined(__i386__) || defined(_M_IX86)) || (defined(__x86_64__) || defined(_M_X64))
 #if defined(__linux__)
 enum {
 #if (defined(i386) || defined(__i386__))

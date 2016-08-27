@@ -30,7 +30,7 @@
 #include "video.h"
 
 #include "m68k.h"
-#include "memory-uae.h"
+#include "memory-mac.h"
 #include "readcpu.h"
 #include "newcpu.h"
 

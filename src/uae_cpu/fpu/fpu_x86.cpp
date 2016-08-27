@@ -136,10 +136,11 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 
 #include "sysdeps.h"
-#include "memory-uae.h"
+#include "memory-mac.h"
 #include "readcpu.h"
 #include "newcpu.h"
 #define FPU_IMPLEMENTATION

@@ -57,7 +57,7 @@ enum {
 };
 
 // Mac memory access functions
-#include "memory-uae.h"
+#include "memory-mac.h"
 static inline uint32 ReadMacInt32(uint32 addr) {return get_long(addr);}
 static inline uint32 ReadMacInt16(uint32 addr) {return get_word(addr);}
 static inline uint32 ReadMacInt8(uint32 addr) {return get_byte(addr);}
