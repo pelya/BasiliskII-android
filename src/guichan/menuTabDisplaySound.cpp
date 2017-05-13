@@ -35,19 +35,20 @@ namespace widgets
   gcn::DropDown* dropDown_frameskip;
   gcn::CheckBox* checkBox_nosound;
 
-const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/600", "win/1024/768"};
+const char *screenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/600", "win/1024/768", "win/1280/800", "win/1366/768", "win/1920/1080"};
+const int screenModeNum = sizeof(screenMode_wlist) / sizeof(screenMode_wlist[0]);
   
   class ScreenModeModel : public gcn::ListModel
   {
     public:
       int getNumberOfElements()
       {
-        return 4;
+        return screenModeNum;
       }
 
       std::string getElementAt(int i)
       {
-		const char *ScreenMode_list[] = { "640x480", "800x600", "1024x600", "1024x768"};
+		const char *ScreenMode_list[] = { "640x480", "800x600", "1024x600", "1024x768", "1280x800", "1366x768", "1920x1080"};
         return std::string(ScreenMode_list[i]);
       }
   };
@@ -81,7 +82,7 @@ const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/600",
         if (actionEvent.getSource() == dropDown_screenmode)
 		{
 			int selected=dropDown_screenmode->getSelected();
-			menu_screen=std::string(ScreenMode_wlist[selected]);
+			menu_screen=std::string(screenMode_wlist[selected]);
 		}
       }
   };
@@ -193,14 +194,10 @@ const char *ScreenMode_wlist[] = { "win/640/480", "win/800/600", "win/1024/600",
 
   void show_settings_TabDisplaySound()
   {
-	if (menu_screen=="win/640/480")
-		dropDown_screenmode->setSelected(0);
-	else if (menu_screen=="win/800/600")
-		dropDown_screenmode->setSelected(1);
-	else if (menu_screen=="win/1024/600")
-		dropDown_screenmode->setSelected(2);
-	else if (menu_screen=="win/1024/768")
-		dropDown_screenmode->setSelected(3);
+    for(int i = 0; i < screenModeNum; i++) {
+	    if (menu_screen == screenMode_wlist[i])
+		    dropDown_screenmode->setSelected(i);
+    }
 	dropDown_frameskip->setSelected(std::atoi(menu_frameskip.c_str()));
 	if (menu_nosound=="true")
 	    checkBox_nosound->setSelected(true);
