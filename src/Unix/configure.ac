@@ -119,7 +119,7 @@ case "$target_cpu" in
 esac
 
 dnl Check if we should really be assuming x86_64 even if we detected HAVE_I386 above.
-if [[ "x$HAVE_I386" = "xyes" ]]; then
+if [[ "x$HAVE_I386" = "xyes" ]] && ![[ "x$cross_compiling" = xy ]]; then
   AC_TRY_RUN([
     int main(void) {
         #if defined(__x86_64__)
