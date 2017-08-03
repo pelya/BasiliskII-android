@@ -517,24 +517,31 @@ mips-sony-bsd|mips-sony-newsos4)
 *-*-freebsd*)
 	no_dev_ptmx=1
 	;;
+*-*-android*)
+	no_dev_ptmx=1
+	no_dev_ptc=1
+	;;
 esac
 
 if test -z "$no_dev_ptmx" ; then
-	if test "x$disable_ptmx_check" != "xyes" ; then
-		AC_CHECK_FILE([/dev/ptmx],
-			[
-				AC_DEFINE_UNQUOTED(HAVE_DEV_PTMX, 1, [Define if you have /dev/ptmx.])
-				have_dev_ptmx=1
-			]
-		)
-	fi
+       if test "x$disable_ptmx_check" != "xyes" ; then
+               AC_CHECK_FILE([/dev/ptmx],
+                       [
+                               AC_DEFINE_UNQUOTED(HAVE_DEV_PTMX, 1, [Define if you have /dev/ptmx.])
+                               have_dev_ptmx=1
+                       ]
+               )
+       fi
 fi
+if test -z "$no_dev_ptc" ; then
 AC_CHECK_FILE([/dev/ptc],
-	[
-		AC_DEFINE_UNQUOTED(HAVE_DEV_PTS_AND_PTC, 1, [Define if you have /dev/ptc.])
-		have_dev_ptc=1
-	]
+       [
+               AC_DEFINE_UNQUOTED(HAVE_DEV_PTS_AND_PTC, 1, [Define if you have /dev/ptc.])
+               have_dev_ptc=1
+       ]
 )
+fi
+
 dnl (end of code from openssh-3.2.2p1 configure.ac)
 
 dnl Check for systems where POSIX-style non-blocking I/O (O_NONBLOCK)
