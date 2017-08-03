@@ -1398,7 +1398,7 @@ AC_MSG_RESULT($HAVE_ICC)
 dnl Set "-fomit-frame-pointer" on i386 GCC 2.7 or higher.
 dnl Also set "-fno-exceptions" for C++ because exception handling requires
 dnl the frame pointer.
-if [[ "x$HAVE_GCC27" = "xyes" -a "x$HAVE_I386" = "xyes" ]]; then
+if [[ "x$HAVE_GCC27" = "xyes" -a "x$HAVE_I386" = "xyes" ]] && false; then
   CFLAGS="$CFLAGS -fomit-frame-pointer"
   CXXFLAGS="$CXXFLAGS -fomit-frame-pointer -fno-exceptions"
 fi
