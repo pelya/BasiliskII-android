@@ -30,23 +30,19 @@
  * ip_icmp.h,v 1.4 1995/05/30 08:09:43 rgrimes Exp
  */
 
-#ifndef _NETINET_IP_ICMP_H_
-#define _NETINET_IP_ICMP_H_
+#ifndef NETINET_IP_ICMP_H
+#define NETINET_IP_ICMP_H
 
 /*
  * Interface Control Message Protocol Definitions.
  * Per RFC 792, September 1981.
  */
 
-typedef u_int32_t n_time;
+typedef uint32_t n_time;
 
 /*
  * Structure of an icmp header.
  */
-#ifdef PRAGMA_PACK_SUPPORTED
-#pragma pack(1)
-#endif
-
 struct icmp {
 	u_char	icmp_type;		/* type of message, see below */
 	u_char	icmp_code;		/* type sub code */
@@ -92,16 +88,12 @@ struct icmp {
 #define	icmp_ip		icmp_dun.id_ip.idi_ip
 #define	icmp_mask	icmp_dun.id_mask
 #define	icmp_data	icmp_dun.id_data
-} PACKED__;
-
-#ifdef PRAGMA_PACK_SUPPORTED
-#pragma pack(PACK_RESET)
-#endif
+};
 
 /*
  * Lower bounds on packet lengths for various types.
- * For the error advice packets must first insure that the
- * packet is large enought to contain the returned ip header.
+ * For the error advice packets must first ensure that the
+ * packet is large enough to contain the returned ip header.
  * Only then can we do the check to see if 64 bits of packet
  * data have been returned, since we need to check the returned
  * ip header length.
@@ -161,8 +153,13 @@ struct icmp {
 	(type) == ICMP_IREQ || (type) == ICMP_IREQREPLY || \
 	(type) == ICMP_MASKREQ || (type) == ICMP_MASKREPLY)
 
+void icmp_init(Slirp *slirp);
+void icmp_cleanup(Slirp *slirp);
 void icmp_input(struct mbuf *, int);
-void icmp_error(struct mbuf *, u_char, u_char, int, char *);
+void icmp_send_error(struct mbuf *msrc, u_char type, u_char code, int minsize,
+                     const char *message);
 void icmp_reflect(struct mbuf *);
+void icmp_receive(struct socket *so);
+void icmp_detach(struct socket *so);
 
 #endif

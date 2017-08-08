@@ -1342,7 +1342,7 @@ int slirp_can_output(void)
 	return 1;
 }
 
-void slirp_output(const uint8 *packet, int len)
+void slirp_output(void *opaque, const uint8 *packet, int len)
 {
 	enqueue_packet(packet, len);
 }

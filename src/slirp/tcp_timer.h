@@ -30,8 +30,8 @@
  * tcp_timer.h,v 1.4 1994/08/21 05:27:38 paul Exp
  */
 
-#ifndef _TCP_TIMER_H_
-#define _TCP_TIMER_H_
+#ifndef TCP_TIMER_H
+#define TCP_TIMER_H
 
 /*
  * Definitions of the TCP timers.  These timers are counted
@@ -98,18 +98,12 @@
 #define	TCPTV_KEEPCNT	8			/* max probes before drop */
 
 #define	TCPTV_MIN	(  1*PR_SLOWHZ)		/* minimum allowable value */
-/* #define	TCPTV_REXMTMAX	( 64*PR_SLOWHZ)	*/	/* max allowable REXMT value */
 #define TCPTV_REXMTMAX  ( 12*PR_SLOWHZ)		/* max allowable REXMT value */
 
 #define	TCP_LINGERTIME	120			/* linger at most 2 minutes */
 
 #define TCP_MAXRXTSHIFT 12                      /* maximum retransmits */
 
-
-#ifdef	TCPTIMERS
-char *tcptimers[] =
-    { "REXMT", "PERSIST", "KEEP", "2MSL" };
-#endif
 
 /*
  * Force a time value to be in a certain range.
@@ -122,17 +116,12 @@ char *tcptimers[] =
 		(tv) = (tvmax); \
 }
 
-extern int tcp_keepidle;		/* time before keepalive probes begin */
-extern int tcp_keepintvl;		/* time between keepalive probes */
-extern int tcp_maxidle;			/* time to drop after starting probes */
-extern int tcp_ttl;			/* time to live for TCP segs */
-extern int tcp_backoff[];
+extern const int tcp_backoff[];
 
 struct tcpcb;
 
-void tcp_fasttimo(void);
-void tcp_slowtimo(void);
+void tcp_fasttimo(Slirp *);
+void tcp_slowtimo(Slirp *);
 void tcp_canceltimers(struct tcpcb *);
-struct tcpcb * tcp_timers(register struct tcpcb *, int);
 
 #endif

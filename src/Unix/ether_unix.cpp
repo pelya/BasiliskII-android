@@ -2,6 +2,7 @@
  *  ether_unix.cpp - Ethernet device driver, Unix specific stuff (Linux and FreeBSD)
  *
  *  Basilisk II (C) 1997-2008 Christian Bauer
+ *  Basilisk II (C) 2017 Google
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,6 +20,9 @@
  */
 
 #include "sysdeps.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 /*
  *  NOTES concerning MacOS X issues:
@@ -124,6 +128,8 @@ const bool ether_driver_opened = true;		// Flag: is the MacOS driver opened?
 
 // Attached network protocols, maps protocol type to MacOS handler address
 static map<uint16, uint32> net_protocols;
+
+static Slirp *active_slirp;
 
 // Prototypes
 static void *receive_func(void *arg);
@@ -266,7 +272,17 @@ bool ether_init(void)
 #ifdef HAVE_SLIRP
 	// Initialize slirp library
 	if (net_if_type == NET_IF_SLIRP) {
-		if (slirp_init() < 0) {
+    struct in_addr vnetwork = { ntohl(0x0a000200) };
+    struct in_addr vnetmask = { ntohl(0xffffff00) };
+    struct in_addr vhost = { ntohl(0x0a000202) };
+    struct in_addr vdhcp_start = { ntohl(0x0a000210) };
+    struct in_addr vnameserver = { ntohl(0x0a000203) };
+    struct in6_addr dummy6 = { 0 };
+    active_slirp = slirp_init(0, 1, vnetwork, vnetmask, vhost, 0, dummy6, 0,
+			      dummy6, NULL, "", "", vdhcp_start,
+			      vnameserver, dummy6, NULL, NULL);
+
+		if (active_slirp == NULL) {
 			sprintf(str, "%s", GetString(STR_SLIRP_NO_DNS_FOUND_WARN));
 			WarningAlert(str);
 			return false;
@@ -792,7 +808,7 @@ int slirp_can_output(void)
 	return 1;
 }
 
-void slirp_output(const uint8 *packet, int len)
+void slirp_output(void *opaque, const uint8 *packet, int len)
 {
 	write(slirp_output_fd, packet, len);
 }
@@ -818,7 +834,7 @@ void *slirp_receive_func(void *arg)
 			uint8 packet[1516];
 			assert(len <= sizeof(packet));
 			read(slirp_input_fd, packet, len);
-			slirp_input(packet, len);
+			slirp_input(active_slirp, packet, len);
 		}
 
 		// ... in the output queue
@@ -833,7 +849,7 @@ void *slirp_receive_func(void *arg)
 		tv.tv_sec = 0;
 		tv.tv_usec = timeout;
 		if (select(nfds + 1, &rfds, &wfds, &xfds, &tv) >= 0)
-			slirp_select_poll(&rfds, &wfds, &xfds);
+		  slirp_select_poll(active_slirp, &rfds, &wfds, &xfds);
 
 #ifdef HAVE_PTHREAD_TESTCANCEL
 		// Explicit cancellation point if select() was not covered
@@ -849,7 +865,7 @@ int slirp_can_output(void)
 	return 0;
 }
 
-void slirp_output(const uint8 *packet, int len)
+void slirp_output(void *opaque, const uint8 *packet, int len)
 {
 }
 #endif
@@ -1000,6 +1016,10 @@ static int slirp_add_redir(const char *redir_str)
 	int is_udp;
 	char *end;
 	char str[256];
+	struct in_addr any = {INADDR_ANY};
+
+	if (!active_slirp)
+	  return -1;
 
 	p = redir_str;
 	if (!p || get_str_sep(buf, sizeof(buf), &p, ':') < 0) {
@@ -1028,7 +1048,7 @@ static int slirp_add_redir(const char *redir_str)
 	// if none is specified
 	if (buf[0] == '\0' ?
 			!inet_aton(CTL_LOCAL, &guest_addr) :
-			!inet_aton(buf, &guest_addr)) {
+	                !inet_aton(buf, &guest_addr)) {
 		goto fail_syntax;
 	}
 
@@ -1037,7 +1057,8 @@ static int slirp_add_redir(const char *redir_str)
 		goto fail_syntax;
 	}
 
-	if (slirp_redir(is_udp, host_port, guest_addr, guest_port) < 0) {
+	if (slirp_add_hostfwd(active_slirp, is_udp, any,
+			      host_port, guest_addr, guest_port) < 0) {
 		sprintf(str, "could not set up host forwarding rule '%s'", redir_str);
 		WarningAlert(str);
 		return -1;
