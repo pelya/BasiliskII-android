@@ -272,15 +272,15 @@ bool ether_init(void)
 #ifdef HAVE_SLIRP
 	// Initialize slirp library
 	if (net_if_type == NET_IF_SLIRP) {
-    struct in_addr vnetwork = { ntohl(0x0a000200) };
-    struct in_addr vnetmask = { ntohl(0xffffff00) };
-    struct in_addr vhost = { ntohl(0x0a000202) };
-    struct in_addr vdhcp_start = { ntohl(0x0a000210) };
-    struct in_addr vnameserver = { ntohl(0x0a000203) };
-    struct in6_addr dummy6 = { 0 };
-    active_slirp = slirp_init(0, 1, vnetwork, vnetmask, vhost, 0, dummy6, 0,
-			      dummy6, NULL, "", "", vdhcp_start,
-			      vnameserver, dummy6, NULL, NULL);
+		struct in_addr vnetwork = { ntohl(0x0a000200) };
+		struct in_addr vnetmask = { ntohl(0xffffff00) };
+		struct in_addr vhost = { ntohl(0x0a000202) };
+		struct in_addr vdhcp_start = { ntohl(0x0a000210) };
+		struct in_addr vnameserver = { ntohl(0x0a000203) };
+		struct in6_addr dummy6 = { 0 };
+		active_slirp = slirp_init(0, 1, vnetwork, vnetmask, vhost, 0, dummy6, 0,
+					  dummy6, NULL, "", "", vdhcp_start,
+					  vnameserver, dummy6, NULL, NULL);
 
 		if (active_slirp == NULL) {
 			sprintf(str, "%s", GetString(STR_SLIRP_NO_DNS_FOUND_WARN));
@@ -849,7 +849,7 @@ void *slirp_receive_func(void *arg)
 		tv.tv_sec = 0;
 		tv.tv_usec = timeout;
 		if (select(nfds + 1, &rfds, &wfds, &xfds, &tv) >= 0)
-		  slirp_select_poll(active_slirp, &rfds, &wfds, &xfds);
+			slirp_select_poll(active_slirp, &rfds, &wfds, &xfds);
 
 #ifdef HAVE_PTHREAD_TESTCANCEL
 		// Explicit cancellation point if select() was not covered
@@ -1019,7 +1019,7 @@ static int slirp_add_redir(const char *redir_str)
 	struct in_addr any = {INADDR_ANY};
 
 	if (!active_slirp)
-	  return -1;
+		return -1;
 
 	p = redir_str;
 	if (!p || get_str_sep(buf, sizeof(buf), &p, ':') < 0) {

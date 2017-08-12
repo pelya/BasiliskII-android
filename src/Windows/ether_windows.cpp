@@ -167,6 +167,8 @@ static HANDLE int_sig = 0;
 static HANDLE int_sig2 = 0;
 static HANDLE int_send_now = 0;
 
+static Slirp *active_slirp;
+
 // Prototypes
 static LPADAPTER tap_open_adapter(LPCTSTR dev_name);
 static void tap_close_adapter(LPADAPTER fd);
@@ -247,7 +249,17 @@ bool ether_init(void)
 
 	// Initialize slirp library
 	if (net_if_type == NET_IF_SLIRP) {
-		if (slirp_init() < 0) {
+		struct in_addr vnetwork = { ntohl(0x0a000200) };
+		struct in_addr vnetmask = { ntohl(0xffffff00) };
+		struct in_addr vhost = { ntohl(0x0a000202) };
+		struct in_addr vdhcp_start = { ntohl(0x0a000210) };
+		struct in_addr vnameserver = { ntohl(0x0a000203) };
+		struct in6_addr dummy6 = { 0 };
+		active_slirp = slirp_init(0, 1, vnetwork, vnetmask, vhost, 0, dummy6, 0,
+					  dummy6, NULL, "", "", vdhcp_start,
+					  vnameserver, dummy6, NULL, NULL);
+
+		if (active_slirp == NULL) {	 
 			WarningAlert(GetString(STR_SLIRP_NO_DNS_FOUND_WARN));
 			return false;
 		}
@@ -1008,7 +1020,7 @@ unsigned int WINAPI ether_thread_write_packets(void *arg)
 				}
 				break;
 			case NET_IF_SLIRP:
-				slirp_input((uint8 *)Packet->Buffer, Packet->Length);
+				slirp_input(active_slirp, (uint8 *)Packet->Buffer, Packet->Length);
 				Packet->bIoComplete = TRUE;
 				recycle_write_packet(Packet);
 				break;
@@ -1379,7 +1391,7 @@ unsigned int WINAPI slirp_receive_func(void *arg)
 			ret = select(0, &rfds, &wfds, &xfds, &tv);
 		}
 		if (ret >= 0)
-			slirp_select_poll(&rfds, &wfds, &xfds);
+			slirp_select_poll(active_slirp, &rfds, &wfds, &xfds);
 	}
 
 	D(bug("slirp_receive_func exit\n"));
