@@ -122,6 +122,22 @@ static void winsock_cleanup(void)
     WSACleanup();
 }
 
+#elif defined(ANDROID)
+
+/* It's tricky to get DNS on Android from C code, so just cheat and use
+   8.8.8.8.
+ */
+int get_dns_addr(struct in_addr *pdns_addr)
+{
+    inet_pton(AF_INET, "8.8.8.8", pdns_addr);
+    return 0;
+}
+
+int get_dns6_addr(struct in6_addr *pdns6_addr, uint32_t *scope_id)
+{
+    return -1;
+}
+
 #else
 
 static int get_dns_addr_cached(void *pdns_addr, void *cached_addr,
