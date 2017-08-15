@@ -1,3 +1,22 @@
+/*
+ *  Basilisk II (C) pelya
+ *  Basilisk II (C) 2017 Google
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -13,6 +32,7 @@ namespace widgets
 	string menu_serialb;
 	string menu_udptunnel;
 	string menu_udpport;
+	string menu_ether;
     string menu_bootdrive;
 	string menu_bootdriver;
 	string menu_ramsize;
@@ -79,6 +99,7 @@ void defConfig()
 	menu_ignoresegv="true";
 	menu_rom="Mac_OS.ROM";
 	menu_screen="win/640/480";
+	menu_ether = "";
 }
 	
 void readConfig()
@@ -169,6 +190,8 @@ void readConfig()
 			menu_rom=current_string;			
 		if (prev_string==string("screen"))
 			menu_screen=current_string;
+		if (prev_string==string("ether"))
+			menu_ether=current_string;
 		prev_string=readed_string;
 	}
 	myfile.close();
@@ -176,7 +199,7 @@ void readConfig()
 
 void writeConfig()
 {
-	char saved_string[999];
+	char saved_string[2048];
 	ofstream myfile;
 	myfile.open(prefsName);
 	strcpy(saved_string,"");
@@ -198,6 +221,12 @@ void writeConfig()
 	strcat(saved_string,"serialb ");
 	strcat(saved_string,menu_serialb.c_str());
 	strcat(saved_string,"\n");
+	if (menu_ether != "")
+	{
+		strcat(saved_string,"ether ");
+		strcat(saved_string,menu_ether.c_str());
+		strcat(saved_string,"\n");
+	}
 	strcat(saved_string,"udptunnel ");
 	strcat(saved_string,menu_udptunnel.c_str());
 	strcat(saved_string,"\n");

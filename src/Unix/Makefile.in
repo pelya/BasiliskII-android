@@ -45,7 +45,7 @@ GUI_LIBS = @GUI_LIBS@
 GUI_SRCS = ../prefs.cpp prefs_unix.cpp prefs_editor_gtk.cpp ../prefs_items.cpp \
 	../user_strings.cpp user_strings_unix.cpp xpram_unix.cpp sys_unix.cpp rpc_unix.cpp
 GUICHAN_SRCS = ../guichan/guichan-gui.cpp ../guichan/menuLoad_guichan.cpp ../guichan/menuTabDisplaySound.cpp  \
-	../guichan/menuTabMisc.cpp ../guichan/menuTabVolumes.cpp ../guichan/rw_config.cpp
+	../guichan/menuTabMisc.cpp ../guichan/menuTabVolumes.cpp ../guichan/menuTabNetwork.cpp ../guichan/rw_config.cpp
 
 XPLAT_SRCS = ../CrossPlatform/vm_alloc.cpp ../CrossPlatform/sigsegv.cpp ../CrossPlatform/video_blit.cpp
 

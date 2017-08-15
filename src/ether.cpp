@@ -2,6 +2,7 @@
  *  ether.cpp - Ethernet device driver
  *
  *  Basilisk II (C) 1997-2008 Christian Bauer
+ *  Basilisk II (C) 2017 Google
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,6 +38,9 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
+#ifdef ANDROID
+#include <net/if.h>
+#endif
 #endif
 
 #include "cpu_emulation.h"
@@ -78,6 +82,87 @@ uint32 ether_data = 0;
 // Attached network protocols for UDP tunneling, maps protocol type to MacOS handler address
 static map<uint16, uint32> udp_protocols;
 
+#ifdef ANDROID
+
+static uint32 get_default_route_ip (void)
+{
+	struct sockaddr_in name;
+	socklen_t namelen = sizeof(name);
+	int sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0)
+		return 0;
+
+	struct sockaddr_in serv;
+	memset(&serv, 0, sizeof(serv));
+	serv.sin_family = AF_INET;
+	/* 8.8.8.8, port 53: Google Public DNS.  */
+	serv.sin_addr.s_addr = htonl(0x08080808);
+	serv.sin_port = htons(53);
+
+	int err = connect(sock, (const struct sockaddr*) &serv, sizeof(serv));
+	if (err < 0)
+		goto fail;
+
+	err = getsockname(sock, (struct sockaddr*) &name, &namelen);
+	if (err < 0)
+		goto fail;
+
+	close (sock);
+
+	return ntohl(name.sin_addr.s_addr);
+fail:
+	close (sock);
+	return 0;
+}
+
+static uint32 get_interface_ip (const char *if_name)
+{
+	int fd;
+	struct ifreq ifr;
+	uint32 ret;
+
+	memset(&ifr, 0, sizeof(ifr));
+
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0)
+		return 0;
+
+	ifr.ifr_addr.sa_family = AF_INET;
+	strncpy(ifr.ifr_name, if_name, IFNAMSIZ-1);
+
+	if (ioctl(fd, SIOCGIFADDR, &ifr) >= 0)
+		ret = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
+
+	close(fd);
+
+	return ret;
+}
+
+static uint32 get_ip (void)
+{
+	uint32 ret;
+	int i;
+	const char *ifaces[] = {
+		"tun0",  // Try VPN if any
+		"wlan0", // WiFi
+		"rmnet_data0",  // Cellular. Try last as it's unlikely to work
+	};
+
+	ret = get_default_route_ip ();
+
+	if (ret)
+		return ret;
+
+	for (i = 0; i < 3; i++) {
+		ret = get_interface_ip (ifaces[i]);
+		if (ret)
+			return ret;
+	}
+
+	/* Last resort, no IP is known.  */
+	return ntohl(INADDR_LOOPBACK);
+}
+#endif
 
 /*
  *  Initialization
@@ -117,7 +202,11 @@ void EtherInit(void)
 		// Retrieve local IP address (or at least one of them)
 		socklen_t sa_length = sizeof(sa);
 		getsockname(udp_socket, (struct sockaddr *)&sa, &sa_length);
-		uint32 udp_ip = sa.sin_addr.s_addr;
+		uint32 udp_ip;
+#ifdef ANDROID
+		udp_ip = get_ip();
+#else
+		udp_ip = sa.sin_addr.s_addr;
 		if (udp_ip == INADDR_ANY || udp_ip == INADDR_LOOPBACK) {
 			char name[256];
 			gethostname(name, sizeof(name));
@@ -126,7 +215,7 @@ void EtherInit(void)
 				udp_ip = *(uint32 *)local->h_addr_list[0];
 		}
 		udp_ip = ntohl(udp_ip);
-
+#endif
 		// Construct dummy Ethernet address from local IP address
 		ether_addr[0] = 'B';
 		ether_addr[1] = '2';

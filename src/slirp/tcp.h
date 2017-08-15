@@ -30,17 +30,13 @@
  * tcp.h,v 1.3 1994/08/21 05:27:34 paul Exp
  */
 
-#ifndef _TCP_H_
-#define _TCP_H_
+#ifndef TCP_H
+#define TCP_H
 
-typedef	u_int32_t	tcp_seq;
+typedef	uint32_t tcp_seq;
 
 #define      PR_SLOWHZ       2               /* 2 slow timeouts per second (approx) */
 #define      PR_FASTHZ       5               /* 5 fast timeouts per second (not important) */
-
-extern size_t tcp_rcvspace;
-extern size_t tcp_sndspace;
-extern struct socket *tcp_last_so;
 
 #define TCP_SNDSPACE 8192
 #define TCP_RCVSPACE 8192
@@ -49,55 +45,56 @@ extern struct socket *tcp_last_so;
  * TCP header.
  * Per RFC 793, September, 1981.
  */
-#ifdef PRAGMA_PACK_SUPPORTED
-#pragma pack(1)
-#endif
-
+#define tcphdr slirp_tcphdr
 struct tcphdr {
-	u_int16_t	th_sport;		/* source port */
-	u_int16_t	th_dport;		/* destination port */
+	uint16_t th_sport;              /* source port */
+	uint16_t th_dport;              /* destination port */
 	tcp_seq	th_seq;			/* sequence number */
 	tcp_seq	th_ack;			/* acknowledgement number */
-#ifdef WORDS_BIGENDIAN
-	u_char	th_off:4,		/* data offset */
+#ifdef HOST_WORDS_BIGENDIAN
+	uint8_t	th_off:4,		/* data offset */
 		th_x2:4;		/* (unused) */
 #else
-	u_char	th_x2:4,		/* (unused) */
+	uint8_t	th_x2:4,		/* (unused) */
 		th_off:4;		/* data offset */
 #endif
-	u_int8_t	th_flags;
+	uint8_t th_flags;
+	uint16_t th_win;                /* window */
+	uint16_t th_sum;                /* checksum */
+	uint16_t th_urp;                /* urgent pointer */
+};
+
+#include "tcp_var.h"
+
+#ifndef TH_FIN
 #define	TH_FIN	0x01
 #define	TH_SYN	0x02
 #define	TH_RST	0x04
 #define	TH_PUSH	0x08
 #define	TH_ACK	0x10
 #define	TH_URG	0x20
-	u_int16_t	th_win;			/* window */
-	u_int16_t	th_sum;			/* checksum */
-	u_int16_t	th_urp;			/* urgent pointer */
-} PACKED__;
-
-#ifdef PRAGMA_PACK_SUPPORTED
-#pragma pack(PACK_RESET)
 #endif
 
-#include "tcp_var.h"
-
+#ifndef TCPOPT_EOL
 #define	TCPOPT_EOL		0
 #define	TCPOPT_NOP		1
 #define	TCPOPT_MAXSEG		2
-#define    TCPOLEN_MAXSEG		4
 #define TCPOPT_WINDOW		3
-#define    TCPOLEN_WINDOW		3
 #define TCPOPT_SACK_PERMITTED	4		/* Experimental */
-#define    TCPOLEN_SACK_PERMITTED	2
 #define TCPOPT_SACK		5		/* Experimental */
 #define TCPOPT_TIMESTAMP	8
-#define    TCPOLEN_TIMESTAMP		10
-#define    TCPOLEN_TSTAMP_APPA		(TCPOLEN_TIMESTAMP+2) /* appendix A */
 
 #define TCPOPT_TSTAMP_HDR	\
     (TCPOPT_NOP<<24|TCPOPT_NOP<<16|TCPOPT_TIMESTAMP<<8|TCPOLEN_TIMESTAMP)
+#endif
+
+#ifndef TCPOLEN_MAXSEG
+#define    TCPOLEN_MAXSEG		4
+#define    TCPOLEN_WINDOW		3
+#define    TCPOLEN_SACK_PERMITTED	2
+#define    TCPOLEN_TIMESTAMP		10
+#define    TCPOLEN_TSTAMP_APPA		(TCPOLEN_TIMESTAMP+2) /* appendix A */
+#endif
 
 /*
  * Default maximum segment size for TCP.
@@ -107,10 +104,15 @@ struct tcphdr {
  *
  * We make this 1460 because we only care about Ethernet in the qemu context.
  */
+#undef TCP_MSS
 #define	TCP_MSS	1460
+#undef TCP6_MSS
+#define TCP6_MSS 1440
 
+#undef TCP_MAXWIN
 #define	TCP_MAXWIN	65535	/* largest value for (unscaled) window */
 
+#undef TCP_MAX_WINSHIFT
 #define TCP_MAX_WINSHIFT	14	/* maximum window shift */
 
 /*
@@ -123,7 +125,6 @@ struct tcphdr {
 #undef TCP_NODELAY
 #define	TCP_NODELAY	0x01	/* don't delay send to coalesce packets */
 #undef TCP_MAXSEG
-/* #define	TCP_MAXSEG	0x02 */	/* set maximum segment size */
 
 /*
  * TCP FSM state definitions.
@@ -173,9 +174,5 @@ struct tcphdr {
     (tp)->snd_una = (tp)->snd_nxt = (tp)->snd_max = (tp)->snd_up = (tp)->iss
 
 #define TCP_ISSINCR     (125*1024)      /* increment for tcp_iss each second */
-
-extern tcp_seq tcp_iss;                /* tcp initial send seq # */
-
-extern char *tcpstates[];
 
 #endif

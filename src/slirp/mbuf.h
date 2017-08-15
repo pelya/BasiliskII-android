@@ -30,21 +30,16 @@
  * mbuf.h,v 1.9 1994/11/14 13:54:20 bde Exp
  */
 
-#ifndef _MBUF_H_
-#define _MBUF_H_
-
-#define m_freem m_free
-
+#ifndef MBUF_H
+#define MBUF_H
 
 #define MINCSIZE 4096	/* Amount to increase mbuf if too small */
 
 /*
  * Macros for type conversion
  * mtod(m,t) -	convert mbuf pointer to data pointer of correct type
- * dtom(x) -	convert data pointer within mbuf to mbuf pointer (XXX)
  */
 #define mtod(m,t)	((t)(m)->m_data)
-/* #define	dtom(x)		((struct mbuf *)((int)(x) & ~(M_SIZE-1))) */
 
 /* XXX About mbufs for slirp:
  * Only one mbuf is ever used in a chain, for each "cell" of data.
@@ -54,23 +49,7 @@
  * free the m_ext.  This is inefficient memory-wise, but who cares.
  */
 
-/* XXX should union some of these! */
-/* header at beginning of each mbuf: */
-struct m_hdr {
-	struct	mbuf *mh_next;		/* Linked list of mbufs */
-	struct	mbuf *mh_prev;
-	struct	mbuf *mh_nextpkt;	/* Next packet in queue/record */
-	struct	mbuf *mh_prevpkt; /* Flags aren't used in the output queue */
-	int	mh_flags;	  /* Misc flags */
-
-	size_t	mh_size;		/* Size of data */
-	struct	socket *mh_so;
-	
-	caddr_t	mh_data;		/* Location of data */
-	size_t	mh_len;			/* Amount of data in this mbuf */
-};
-
-/* 
+/*
  * How much room is in the mbuf, from m_data to the end of the mbuf
  */
 #define M_ROOM(m) ((m->m_flags & M_EXT)? \
@@ -85,24 +64,27 @@ struct m_hdr {
 #define M_TRAILINGSPACE M_FREEROOM
 
 struct mbuf {
-	struct	m_hdr m_hdr;
-	union M_dat {
-		char	m_dat_[1]; /* ANSI don't like 0 sized arrays */
-		char	*m_ext_;
-	} M_dat;
-};
+	/* XXX should union some of these! */
+	/* header at beginning of each mbuf: */
+	struct	mbuf *m_next;		/* Linked list of mbufs */
+	struct	mbuf *m_prev;
+	struct	mbuf *m_nextpkt;	/* Next packet in queue/record */
+	struct	mbuf *m_prevpkt;	/* Flags aren't used in the output queue */
+	int	m_flags;		/* Misc flags */
 
-#define m_next		m_hdr.mh_next
-#define m_prev		m_hdr.mh_prev
-#define m_nextpkt	m_hdr.mh_nextpkt
-#define m_prevpkt	m_hdr.mh_prevpkt
-#define m_flags		m_hdr.mh_flags
-#define	m_len		m_hdr.mh_len
-#define	m_data		m_hdr.mh_data
-#define m_size		m_hdr.mh_size
-#define m_dat		M_dat.m_dat_
-#define m_ext		M_dat.m_ext_
-#define m_so		m_hdr.mh_so
+	int	m_size;			/* Size of data */
+	struct	socket *m_so;
+
+	caddr_t	m_data;			/* Location of data */
+	int	m_len;			/* Amount of data in this mbuf */
+
+	Slirp *slirp;
+	bool	resolution_requested;
+	uint64_t expiration_date;
+	char   *m_ext;
+	/* start of dynamic buffer area, must be last element */
+	char    m_dat[];
+};
 
 #define ifq_prev m_prev
 #define ifq_next m_next
@@ -116,28 +98,19 @@ struct mbuf {
 #define M_DOFREE		0x08	/* when m_free is called on the mbuf, free()
 					 * it rather than putting it on the free list */
 
-/*
- * Mbuf statistics. XXX
- */
-
-struct mbstat {
-	int mbs_alloced;		/* Number of mbufs allocated */
-	
-};
-
-extern struct	mbstat mbstat;
-extern int mbuf_alloced;
-extern struct mbuf m_freelist, m_usedlist;
-extern int mbuf_max;
-
-void m_init(void);
-void msize_init(void);
-struct mbuf * m_get(void);
+void m_init(Slirp *);
+void m_cleanup(Slirp *slirp);
+struct mbuf * m_get(Slirp *);
 void m_free(struct mbuf *);
 void m_cat(register struct mbuf *, register struct mbuf *);
-void m_inc(struct mbuf *, u_int);
+void m_inc(struct mbuf *, int);
 void m_adj(struct mbuf *, int);
-int m_copy(struct mbuf *, struct mbuf *, u_int, u_int);
-struct mbuf * dtom(void *);
+int m_copy(struct mbuf *, struct mbuf *, int, int);
+struct mbuf * dtom(Slirp *, void *);
+
+static inline void ifs_init(struct mbuf *ifm)
+{
+    ifm->ifs_next = ifm->ifs_prev = ifm;
+}
 
 #endif

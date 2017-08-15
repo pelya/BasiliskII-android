@@ -30,53 +30,57 @@
  * in_cksum.c,v 1.2 1994/08/02 07:48:16 davidg Exp
  */
 
-#include <slirp.h>
+#include "qemu/osdep.h"
+#include "slirp.h"
 
 /*
  * Checksum routine for Internet Protocol family headers (Portable Version).
  *
  * This routine is very heavily used in the network
  * code and should be modified for each CPU to be as fast as possible.
- * 
+ *
  * XXX Since we will never span more than 1 mbuf, we can optimise this
  */
 
 #define ADDCARRY(x)  (x > 65535 ? x -= 65535 : x)
-#define REDUCE {l_util.l = sum; sum = l_util.s[0] + l_util.s[1]; ADDCARRY(sum);}
+#define REDUCE {l_util.l = sum; sum = l_util.s[0] + l_util.s[1];        \
+        (void)ADDCARRY(sum);}
 
 int cksum(struct mbuf *m, int len)
 {
-	register u_int16_t *w;
+	register uint16_t *w;
 	register int sum = 0;
 	register int mlen = 0;
 	int byte_swapped = 0;
 
 	union {
-		u_int8_t	c[2];
-		u_int16_t	s;
+		uint8_t  c[2];
+		uint16_t s;
 	} s_util;
 	union {
-		u_int16_t s[2];
-		u_int32_t l;
+		uint16_t s[2];
+		uint32_t l;
 	} l_util;
-	
+
 	if (m->m_len == 0)
 	   goto cont;
-	w = mtod(m, u_int16_t *);
-	
+	w = mtod(m, uint16_t *);
+
 	mlen = m->m_len;
-	
+
 	if (len < mlen)
 	   mlen = len;
+#ifdef DEBUG
 	len -= mlen;
+#endif
 	/*
 	 * Force to even boundary.
 	 */
-	if ((1 & (long) w) && (mlen > 0)) {
+	if ((1 & (uintptr_t)w) && (mlen > 0)) {
 		REDUCE;
 		sum <<= 8;
-		s_util.c[0] = *(u_int8_t *)w;
-		w = (u_int16_t *)((int8_t *)w + 1);
+		s_util.c[0] = *(uint8_t *)w;
+		w = (uint16_t *)((int8_t *)w + 1);
 		mlen--;
 		byte_swapped = 1;
 	}
@@ -103,21 +107,20 @@ int cksum(struct mbuf *m, int len)
 	while ((mlen -= 2) >= 0) {
 		sum += *w++;
 	}
-	
+
 	if (byte_swapped) {
 		REDUCE;
 		sum <<= 8;
-		byte_swapped = 0;
 		if (mlen == -1) {
-			s_util.c[1] = *(u_int8_t *)w;
+			s_util.c[1] = *(uint8_t *)w;
 			sum += s_util.s;
 			mlen = 0;
 		} else
-		   
+
 		   mlen = -1;
 	} else if (mlen == -1)
-	   s_util.c[0] = *(u_int8_t *)w;
-	
+	   s_util.c[0] = *(uint8_t *)w;
+
 cont:
 #ifdef DEBUG
 	if (len) {
@@ -134,4 +137,29 @@ cont:
 	}
 	REDUCE;
 	return (~sum & 0xffff);
+}
+
+int ip6_cksum(struct mbuf *m)
+{
+    /* TODO: Optimize this by being able to pass the ip6_pseudohdr to cksum
+     * separately from the mbuf */
+    struct ip6 save_ip, *ip = mtod(m, struct ip6 *);
+    struct ip6_pseudohdr *ih = mtod(m, struct ip6_pseudohdr *);
+    int sum;
+
+    save_ip = *ip;
+
+    ih->ih_src = save_ip.ip_src;
+    ih->ih_dst = save_ip.ip_dst;
+    ih->ih_pl = htonl((uint32_t)ntohs(save_ip.ip_pl));
+    ih->ih_zero_hi = 0;
+    ih->ih_zero_lo = 0;
+    ih->ih_nh = save_ip.ip_nh;
+
+    sum = cksum(m, ((int)sizeof(struct ip6_pseudohdr))
+                    + ntohl(ih->ih_pl));
+
+    *ip = save_ip;
+
+    return sum;
 }

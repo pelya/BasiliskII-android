@@ -1,3 +1,22 @@
+/*
+ *  Basilisk II (C) pelya
+ *  Basilisk II (C) 2017 Google
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include <algorithm>
 #ifdef ANDROIDSDL
 #include <android/log.h>
@@ -207,6 +226,7 @@ namespace widgets
   void show_settings_TabVolumes(void);
   void show_settings_TabMisc(void);
   void show_settings_TabDisplaySound(void);
+  void show_settings_TabNetwork(void);
  
   void menuTabVolumes_Init(void);
   void menuTabVolumes_Exit(void);
@@ -214,6 +234,8 @@ namespace widgets
   void menuTabMisc_Exit(void);
   void menuTabDisplaySound_Init(void);
   void menuTabDisplaySound_Exit(void);
+  void menuTabNetwork_Init(void);
+  void menuTabNetwork_Exit(void);
   void loadMenu_Init(void);
   void loadMenu_Exit(void);
   
@@ -240,8 +262,9 @@ namespace widgets
   extern gcn::Container *tab_volumes;
   extern gcn::Container *tab_misc;
   extern gcn::Container *tab_displaysound; 
+  extern gcn::Container *tab_network; 
     
-  const int numTabs = 3;
+  const int numTabs = 4;
   gcn::Tab *allTabs[numTabs];
   
   class QuitButtonActionListener : public gcn::ActionListener
@@ -334,6 +357,7 @@ namespace widgets
     menuTabVolumes_Init();
 	menuTabMisc_Init();
 	menuTabDisplaySound_Init(); 
+	menuTabNetwork_Init();
 
   	//--------------------------------------------------
     // Tab-Dialog
@@ -355,6 +379,8 @@ namespace widgets
 	 tabbedArea->addTab(allTabs[1], tab_misc);
 	 allTabs[2]->setCaption(" Graphics/Sound ");
 	 tabbedArea->addTab(allTabs[2], tab_displaysound);
+	 allTabs[3]->setCaption(" Network ");
+	 tabbedArea->addTab(allTabs[3], tab_network);
 	
 	loadMenu_Init(); 
 	
@@ -379,6 +405,7 @@ namespace widgets
 	menuTabVolumes_Exit();
 	menuTabMisc_Exit();
 	menuTabDisplaySound_Exit();
+	menuTabNetwork_Exit();
 	loadMenu_Exit(); 
 	
     delete tabbedArea;
@@ -412,6 +439,7 @@ namespace widgets
     show_settings_TabVolumes();
 	show_settings_TabMisc();
 	show_settings_TabDisplaySound();
+	show_settings_TabNetwork();
   }
   
 } 

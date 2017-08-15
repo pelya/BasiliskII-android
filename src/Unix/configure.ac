@@ -119,7 +119,7 @@ case "$target_cpu" in
 esac
 
 dnl Check if we should really be assuming x86_64 even if we detected HAVE_I386 above.
-if [[ "x$HAVE_I386" = "xyes" ]]; then
+if [[ "x$HAVE_I386" = "xyes" ]] && ![[ "x$cross_compiling" = xy ]]; then
   AC_TRY_RUN([
     int main(void) {
         #if defined(__x86_64__)
@@ -517,24 +517,32 @@ mips-sony-bsd|mips-sony-newsos4)
 *-*-freebsd*)
 	no_dev_ptmx=1
 	;;
+*-*-android*)
+	no_dev_ptmx=1
+	no_dev_ptc=1
+	disable_x86_optimizations=yes
+	;;
 esac
 
 if test -z "$no_dev_ptmx" ; then
-	if test "x$disable_ptmx_check" != "xyes" ; then
-		AC_CHECK_FILE([/dev/ptmx],
-			[
-				AC_DEFINE_UNQUOTED(HAVE_DEV_PTMX, 1, [Define if you have /dev/ptmx.])
-				have_dev_ptmx=1
-			]
-		)
-	fi
+       if test "x$disable_ptmx_check" != "xyes" ; then
+               AC_CHECK_FILE([/dev/ptmx],
+                       [
+                               AC_DEFINE_UNQUOTED(HAVE_DEV_PTMX, 1, [Define if you have /dev/ptmx.])
+                               have_dev_ptmx=1
+                       ]
+               )
+       fi
 fi
+if test -z "$no_dev_ptc" ; then
 AC_CHECK_FILE([/dev/ptc],
-	[
-		AC_DEFINE_UNQUOTED(HAVE_DEV_PTS_AND_PTC, 1, [Define if you have /dev/ptc.])
-		have_dev_ptc=1
-	]
+       [
+               AC_DEFINE_UNQUOTED(HAVE_DEV_PTS_AND_PTC, 1, [Define if you have /dev/ptc.])
+               have_dev_ptc=1
+       ]
 )
+fi
+
 dnl (end of code from openssh-3.2.2p1 configure.ac)
 
 dnl Check for systems where POSIX-style non-blocking I/O (O_NONBLOCK)
@@ -704,10 +712,13 @@ if [[ -n "$CAN_SLIRP" ]]; then
   SLIRP_SRCS="\
     ../slirp/bootp.c     ../slirp/ip_output.c  ../slirp/tcp_input.c  \
     ../slirp/cksum.c     ../slirp/mbuf.c       ../slirp/tcp_output.c \
-    ../slirp/debug.c     ../slirp/misc.c       ../slirp/tcp_subr.c   \
+    ../slirp/dnssearch.c ../slirp/misc.c      ../slirp/tcp_subr.c   \
     ../slirp/if.c        ../slirp/sbuf.c       ../slirp/tcp_timer.c  \
     ../slirp/ip_icmp.c   ../slirp/slirp.c      ../slirp/tftp.c       \
-    ../slirp/ip_input.c  ../slirp/socket.c     ../slirp/udp.c"
+    ../slirp/ip_input.c  ../slirp/socket.c     ../slirp/udp.c        \
+    ../slirp/arp_table.c ../slirp/support.c    ../slirp/dhcpv6.c     \
+    ../slirp/ip6_icmp.c  ../slirp/ip6_input.c  ../slirp/ip6_output.c \
+    ../slirp/ndp_table.c ../slirp/udp6.c"
 fi
 AC_SUBST(SLIRP_SRCS)
 
@@ -1390,7 +1401,7 @@ AC_MSG_RESULT($HAVE_ICC)
 dnl Set "-fomit-frame-pointer" on i386 GCC 2.7 or higher.
 dnl Also set "-fno-exceptions" for C++ because exception handling requires
 dnl the frame pointer.
-if [[ "x$HAVE_GCC27" = "xyes" -a "x$HAVE_I386" = "xyes" ]]; then
+if [[ "x$HAVE_GCC27" = "xyes" -a "x$HAVE_I386" = "xyes" ]] && false; then
   CFLAGS="$CFLAGS -fomit-frame-pointer"
   CXXFLAGS="$CXXFLAGS -fomit-frame-pointer -fno-exceptions"
 fi
@@ -1471,7 +1482,7 @@ JITSRCS="compemu1.cpp compemu2.cpp compemu3.cpp compemu4.cpp compemu5.cpp compem
 if [[ "x$HAVE_GCC27" = "xyes" -a "x$HAVE_I386" = "xyes" ]]; then
   dnl i386 CPU
   DEFINES="$DEFINES -DUNALIGNED_PROFITABLE -DREGPARAM=\"__attribute__((regparm(3)))\""
-  if [[ "x$HAVE_GAS" = "xyes" ]]; then
+  if [[ "x$HAVE_GAS" = "xyes" ]] && [[ "x$disable_x86_optimizations" != "xyes" ]]; then
     ASM_OPTIMIZATIONS=i386
     DEFINES="$DEFINES -DX86_ASSEMBLY -DOPTIMIZED_FLAGS -DSAHF_SETO_PROFITABLE"
     JITSRCS="cpuemu1_nf.cpp cpuemu2_nf.cpp cpuemu3_nf.cpp cpuemu4_nf.cpp cpuemu5_nf.cpp cpuemu6_nf.cpp cpuemu7_nf.cpp cpuemu8_nf.cpp $JITSRCS"
@@ -1480,7 +1491,7 @@ if [[ "x$HAVE_GCC27" = "xyes" -a "x$HAVE_I386" = "xyes" ]]; then
 elif [[ "x$HAVE_GCC30" = "xyes" -a "x$HAVE_X86_64" = "xyes" ]]; then
   dnl x86-64 CPU
   DEFINES="$DEFINES -DUNALIGNED_PROFITABLE"
-  if [[ "x$HAVE_GAS" = "xyes" ]]; then
+  if [[ "x$HAVE_GAS" = "xyes" ]] && [[ "x$disable_x86_optimizations" != "xyes" ]]; then
     ASM_OPTIMIZATIONS="x86-64"
     DEFINES="$DEFINES -DX86_64_ASSEMBLY -DOPTIMIZED_FLAGS"
     JITSRCS="cpuemu1_nf.cpp cpuemu2_nf.cpp cpuemu3_nf.cpp cpuemu4_nf.cpp cpuemu5_nf.cpp cpuemu6_nf.cpp cpuemu7_nf.cpp cpuemu8_nf.cpp $JITSRCS"
