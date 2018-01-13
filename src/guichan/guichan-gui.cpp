@@ -18,9 +18,6 @@
  */
 
 #include <algorithm>
-#ifdef ANDROIDSDL
-#include <android/log.h>
-#endif
 #include <guichan.hpp>
 #include <iostream>
 #include <sstream>
@@ -31,7 +28,9 @@
 #define PANDORA
 
 #if defined(ANDROID)
+#include <android/log.h>
 #include <SDL_screenkeyboard.h>
+#include <SDL_android.h>
 #endif
 
 SDL_Surface* GuiScreen;
@@ -448,6 +447,7 @@ namespace widgets
  {
 #ifdef ANDROID	  
   SDL_ANDROID_SetScreenKeyboardShown(0);
+  SDL_ANDROID_SetSystemMousePointerVisible(1);
 #endif
    running = true;
    
@@ -462,6 +462,7 @@ namespace widgets
     SDL_JoystickClose (joy0);
 #ifdef ANDROID	  
   SDL_ANDROID_SetScreenKeyboardShown(1);
+  SDL_ANDROID_SetSystemMousePointerVisible(0);
 #endif
    }
 
