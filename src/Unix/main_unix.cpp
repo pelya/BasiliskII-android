@@ -985,7 +985,7 @@ static void sigint_handler(...)
 void Set_pthread_attr(pthread_attr_t *attr, int priority)
 {
 	pthread_attr_init(attr);
-#if defined(_POSIX_THREAD_PRIORITY_SCHEDULING)
+#if defined(_POSIX_THREAD_PRIORITY_SCHEDULING) && !defined(__ANDROID__)
 	// Some of these only work for superuser
 	if (geteuid() == 0) {
 		pthread_attr_setinheritsched(attr, PTHREAD_EXPLICIT_SCHED);
